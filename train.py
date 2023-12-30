@@ -31,7 +31,7 @@ config = GlowTTSConfig(
     epochs=100,
     text_cleaner="phoneme_cleaners",
     use_phonemes=True,
-    phoneme_language="ga-ie",
+    phoneme_language="ga",
     phoneme_cache_path=os.path.join(output_path, "phoneme_cache"),
     print_step=25,
     print_eval=False,
@@ -70,3 +70,4 @@ trainer.fit()
 
 # !pip install tensorboard
 # !tensorboard --logdir=tts_train_dir
+# not necessary built in ot vsc
