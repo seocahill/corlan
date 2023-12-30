@@ -1,0 +1,6 @@
+wavs
+tts_train_dir
+*.mp3
+*.pdf
+*.log
+*.csv
