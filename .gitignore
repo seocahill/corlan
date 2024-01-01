@@ -4,3 +4,5 @@ tts_train_dir
 *.pdf
 *.log
 *.csv
+logs
+*.wav
