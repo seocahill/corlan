@@ -1,4 +1,4 @@
-## Install Coqui TTS
+# Install Coqui TTS
 # ! pip install -U pip
 # ! pip install TTS
 

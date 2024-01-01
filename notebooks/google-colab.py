@@ -1,7 +1,11 @@
-## Install Coqui TTS and g2p for irish phonemizer support
+# Install Coqui TTS and g2p for Irish phonemizer support
 !pip install -U pip
-!pip install git+https://github.com/seocahill/g2p.git
-!pip install git+https://github.com/seocahill/TTS.git
+!pip install "git+https://github.com/seocahill/g2p.git@a5d318c158ab376a403f9af94f50aeee4adda68f#egg=g2p"
+!pip install "git+https://github.com/seocahill/TTS.git@7bb173d53824b89e0b40ae4e9716368c463d6174#egg=TTS"
+
+# Mount Google Drive
+from google.colab import drive
+drive.mount('/content/drive')
 
 import os
 
@@ -9,48 +13,50 @@ def main():
     # BaseDatasetConfig: defines name, formatter and path of the dataset.
     from TTS.tts.configs.shared_configs import BaseDatasetConfig
 
-    output_path = "tts_train_dir"
+    # Update output_path to a directory in Google Drive
+    output_path = "/content/drive/My Drive/tts_train_dir"
     if not os.path.exists(output_path):
-        os.makedirs(output_path)
+        os.makedirs(output_path, exist_ok=True)
 
-    # Download and extract irish dataset.
-    !wget -O $output_path/ga.ie.cll.48000.tar.gz https://archive.org/download/ga.ie.cll.48000.tar/ga.ie.cll.48000.tar.gz
-    !mkdir -p $output_path/ga_ie_cll_48000/wavs
-    !tar -xzvf $output_path/ga.ie.cll.48000.tar.gz -C $output_path/ga_ie_cll_48000
-    # Dir format per LJSpeech
-    !mv $output_path/ga_ie_cll_48000/48000_orig/* $output_path/ga_ie_cll_48000/wavs
+    # Paths for dataset and metadata
+    dataset_path = f"{output_path}/ga.ie.cll.48000.tar.gz"
+    metadata_path = f"{output_path}/ga_ie_cll_48000/metadata.xml"
 
-    # Download and format metadata
+    # Download and extract Irish dataset if not already done
+    if not os.path.exists(dataset_path):
+        !wget -O "$dataset_path" https://archive.org/download/ga.ie.cll.48000.tar/ga.ie.cll.48000.tar.gz
+
+    extracted_path = f"{output_path}/ga_ie_cll_48000"
+    if not os.path.exists(extracted_path):
+        !mkdir -p "$extracted_path/wavs"
+        !tar -xzvf "$dataset_path" -C "$extracted_path"
+        # Dir format per LJSpeech
+        !mv "$extracted_path/48000_orig/*" "$extracted_path/wavs"
+
+    # Download and format metadata if not already done
+    if not os.path.exists(metadata_path):
+        !wget -O "$metadata_path" https://raw.githubusercontent.com/Idlak/Living-Audio-Dataset/master/ga/text.xml
+
     import xml.etree.ElementTree as ET
     import csv
 
-    # Path to your XML file
-    !wget -O $output_path/ga.ie.cll.48000/metadata.xml https://github.com/Idlak/Living-Audio-Dataset/blob/master/ga/text.xml
+    # Update file paths for the Google Drive directory
+    xml_file_path = f"{output_path}/ga_ie_cll_48000/metadata.xml"
+    csv_file_path = f"{output_path}/ga_ie_cll_48000/metadata.csv"
 
-    xml_file_path = "tts_train_dir/ga.ie.cll.48000/metadata.xml"
-
-    # Path for the output CSV file
-    csv_file_path = "tts_train_dir/ga.ie.cll.48000/metadata.csv"
-
-    # Parse the XML file
+    # Parse the XML file and create CSV
     tree = ET.parse(xml_file_path)
     root = tree.getroot()
 
-    # Open the CSV file for writing
     with open(csv_file_path, mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file, delimiter='|', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-
-        # Iterate through each fileid element in the XML
         for fileid in root.findall('fileid'):
-            # Extract the id attribute and the text
             id_attr = fileid.get('id')
             text = fileid.text.strip()
-
-            # Write to the CSV file
             writer.writerow([id_attr, text, text])
 
     dataset_config = BaseDatasetConfig(
-        formatter="ljspeech", meta_file_train="metadata.csv", path=os.path.join(output_path, "ga_ie_cli_4800/")
+        formatter="ljspeech", meta_file_train="metadata.csv", path=os.path.join(output_path, "ga_ie_cll_48000/")
     )
 
     # GlowTTSConfig: all model related values for training, validating and testing.
@@ -94,6 +100,15 @@ def main():
     from TTS.tts.models.glow_tts import GlowTTS
     model = GlowTTS(config, ap, tokenizer, speaker_manager=None)
 
+    # Path to the TensorBoard log directory
+    log_dir = f"{output_path}/logs"
+
+    # Ensure the log directory exists
+    os.makedirs(log_dir, exist_ok=True)
+
+    # Start TensorBoard to monitor the training logs
+    # %tensorboard --logdir $log_dir
+
     from trainer import Trainer, TrainerArgs
     trainer = Trainer(
         TrainerArgs(), config, output_path, model=model, train_samples=train_samples, eval_samples=eval_samples
@@ -101,9 +116,6 @@ def main():
 
     trainer.fit()
 
-    !pip install tensorboard
-    !tensorboard --logdir=tts_train_dir
-
 if __name__ == '__main__':
     main()
-
+    # !tensorboard --logdir=tts_train_dir
