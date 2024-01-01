@@ -1,5 +1,8 @@
 # Install Coqui TTS and g2p for Irish phonemizer support
 !pip install -U pip
+!pip install --upgrade tensorflow
+!pip install numpy==1.23.0
+!pip install fastapi kaleido python-multipart uvicorn plotnine pywavelets typing-extensions
 !pip install "git+https://github.com/seocahill/g2p.git@a5d318c158ab376a403f9af94f50aeee4adda68f#egg=g2p"
 !pip install "git+https://github.com/seocahill/TTS.git@7bb173d53824b89e0b40ae4e9716368c463d6174#egg=TTS"
 
